@@ -101,3 +101,27 @@ Replace the contents of SG.EnumGenerators.csproj with the following:
 </code>
 </pre>
 
+# Collecting details about enums
+
+At a minimum, we need to know:
+- The full Type name of the enum
+- The name of all the values
+
+And that's pretty much it. There's lots of more information we could collect for a better user experience, but for now, we'll stick with that, to get something working. Given that, we can create a simple type to hold the details about the enums we discover:
+
+<pre>
+<code>
+public readonly struct EnumToGenerate
+{
+    public readonly string Name;
+    public readonly List<string> Values;
+
+    public EnumToGenerate(string name, List<string> values)
+    {
+        Name = name;
+        Values = values;
+    }
+}
+</code>
+</pre>
+
