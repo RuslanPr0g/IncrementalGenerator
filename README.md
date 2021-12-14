@@ -162,3 +162,38 @@ public static class SourceGenerationHelper
 </code>
 </pre>
 
+# Creating the incremental source generator
+
+To create an incremental source generator, you need to do 3 things:
+- Include the Microsoft.CodeAnalysis.CSharp package in your project. Note that incremental generators were introduced in version 4.0.0, and are only supported in .NET 6/VS 2022.
+- Create a class that implements IIncrementalGenerator
+- Decorate the class with the [Generator] attribute
+
+We've already done the first step, so let's create our EnumGenerator implementation:
+
+<pre>
+<code>
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.Text;
+using System.Text;
+
+namespace SG.EnumGenerators;
+[Generator]
+public class EnumGenerator : IIncrementalGenerator
+{
+    public void Initialize(IncrementalGeneratorInitializationContext context)
+    {
+        // Add the marker attribute to the compilation
+        context.RegisterPostInitializationOutput(ctx => ctx.AddSource(
+            "EnumExtensionsAttribute.g.cs",
+            SourceText.From(SourceGenerationHelper.Attribute, Encoding.UTF8)));
+
+        // TODO: implement the remainder of the source generator
+    }
+}
+</code>
+</pre>
+
+IIncrementalGenerator only requires you implement a single method, Initialize(). In this method you can register your "static" source code (like the marker attributes), as well as build a pipeline for identifying syntax of interest, and transforming that syntax into source code.
+
+In the implementation above, we've already added the code that registers our marker attribute to the compilation. Next, we'll build up the code to identify enums that have been decorated with the marker attribute.
