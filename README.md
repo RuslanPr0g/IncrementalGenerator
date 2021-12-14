@@ -58,3 +58,46 @@ If we compare this simple switch statement to the default ToString() implementat
 First off, it's worth pointing out that ToString() in .NET 6 is over 30× faster and allocates only a quarter of the bytes than the method in .NET Framework! Compare that to the "fast" version though, and it's still super slow!
 
 As fast as it is, creating the ToStringFast() method is a bit of a pain, as you have to make sure to keep it up to date as your enum changes. Luckily, that's a perfect usecase for a source generator!
+
+# Creating the Source generator project
+To get started we need to create a C# project. Source generators must target netstandard2.0, and you'll need to add some standard packages to get access to the source generator types.
+
+Start by creating a class library. The following uses the sdk to create a solution and a project in the current folder:
+
+<pre>
+<code>
+dotnet new sln -n SG.EnumGenerators
+dotnet new classlib -o ./src/SG.EnumGenerators
+dotnet sln add ./src/SG.EnumGenerators
+</code>
+</pre>
+
+Replace the contents of SG.EnumGenerators.csproj with the following:
+
+<pre>
+<code>
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<!-- Source generators must target netstandard 2.0 -->
+		<TargetFramework>netstandard2.0</TargetFramework>
+		<!-- We don't want to reference the source generator dll directly in consuming projects -->
+		<IncludeBuildOutput>false</IncludeBuildOutput>
+		<!-- New project, why not! -->
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>true</ImplicitUsings>
+		<LangVersion>Latest</LangVersion>
+	</PropertyGroup>
+	<!-- The following libraries include the source generator interfaces and types we need -->
+	<ItemGroup>
+		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.2" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" PrivateAssets="all" />
+	</ItemGroup>
+	<!-- This ensures the library will be packaged as a source generator when we use `dotnet pack` -->
+	<ItemGroup>
+		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true"
+			PackagePath="analyzers/dotnet/cs" Visible="false" />
+	</ItemGroup>
+</Project>
+</code>
+</pre>
+
