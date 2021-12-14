@@ -220,3 +220,86 @@ The next stage of the pipeline simply combines our collection of EnumDeclaration
 
 Finally, we use the combined tuple of (Compilation, ImmutableArray<EnumDeclarationSyntax>) to actually generate the source code for the EnumExtensions class, using the Execute() method.
 
+# Implementing the pipeline stages
+
+The first stage of the pipeline needs to be very fast, so we operate solely on the SyntaxNode passed in, filtering down to select only EnumDeclarationSyntax nodes, which have at least one attribute:
+
+<pre>
+<code>
+    static bool IsSyntaxTargetForGeneration(SyntaxNode node)
+    => node is EnumDeclarationSyntax { AttributeLists.Count: > 0 };
+</code>
+</pre>
+
+As you can see, this is a very efficient predicate. It's using a simple pattern match to check the type of the node, and checking the properties.
+
+After this efficient filtering has run, we can be a bit more critical. We don't want any attribute, we only want our specific marker attribute. In GetSemanticTargetForGeneration() we loop through each of the nodes that passed the previous test, and look for our marker attribute. If the node has the attribute, we return the node so it can take part in further generation. If the enum doesn't have the marker attribute, we return null, and filter it out in the next stage.
+
+<pre>
+<code>
+    private const string EnumExtensionsAttribute = "SG.EnumGenerators.EnumExtensionsAttribute";
+
+    static EnumDeclarationSyntax? GetSemanticTargetForGeneration(GeneratorSyntaxContext context)
+    {
+        // we know the node is a EnumDeclarationSyntax thanks to IsSyntaxTargetForGeneration
+        var enumDeclarationSyntax = (EnumDeclarationSyntax)context.Node;
+
+        // loop through all the attributes on the method
+        foreach (AttributeListSyntax attributeListSyntax in enumDeclarationSyntax.AttributeLists)
+        {
+            foreach (AttributeSyntax attributeSyntax in attributeListSyntax.Attributes)
+            {
+                if (context.SemanticModel.GetSymbolInfo(attributeSyntax).Symbol is not IMethodSymbol attributeSymbol)
+                {
+                    // weird, we couldn't get the symbol, ignore it
+                    continue;
+                }
+
+                INamedTypeSymbol attributeContainingTypeSymbol = attributeSymbol.ContainingType;
+                string fullName = attributeContainingTypeSymbol.ToDisplayString();
+
+                // Is the attribute the [EnumExtensions] attribute?
+                if (fullName == EnumExtensionsAttribute)
+                {
+                    // return the enum
+                    return enumDeclarationSyntax;
+                }
+            }
+        }
+
+        // we didn't find the attribute we were looking for
+        return null;
+    }
+</code>
+</pre>
+
+**| Note that we're still trying to be efficient where we can, so we're using foreach loops, rather than LINQ.**
+
+After we've run this stage of the pipeline, we will have a collection of EnumDeclarationSyntax that we know have the [EnumExtensions] attribute. In the Execute method, we create an EnumToGenerate to hold the details we need from each enum, pass that to our SourceGenerationHelper class to generate the source code, and add it to the compilation output
+
+<pre>
+<code>
+    static void Execute(Compilation compilation, ImmutableArray<EnumDeclarationSyntax> enums, SourceProductionContext context)
+    {
+        if (enums.IsDefaultOrEmpty)
+            return;
+
+        IEnumerable<EnumDeclarationSyntax> distinctEnums = enums.Distinct();
+
+        // Convert each EnumDeclarationSyntax to an EnumToGenerate
+        List<EnumToGenerate> enumsToGenerate = GetTypesToGenerate(compilation, distinctEnums, context.CancellationToken);
+
+        // If there were errors in the EnumDeclarationSyntax, we won't create an
+        // EnumToGenerate for it, so make sure we have something to generate
+        if (enumsToGenerate.Count > 0)
+        {
+            // generate the source code and add it to the output
+            string result = SourceGenerationHelper.GenerateExtensionClass(enumsToGenerate);
+            context.AddSource("EnumExtensions.g.cs", SourceText.From(result, Encoding.UTF8));
+        }
+    }
+</code>
+</pre>
+
+We're getting close now, we just have two more methods to fill in:GetTypesToGenerate(), and SourceGenerationHelper.GenerateExtensionClass().
+
