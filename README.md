@@ -26,7 +26,7 @@ In your code, you pass instances of the enum Color around, but behind the scenes
 
 <pre>
 <code>
-void PrintColour(Color color)
+void PrintColor(Color color)
 {
     Console.WriteLine("You chose " + color.ToString());
 }
@@ -136,7 +136,7 @@ We also need to think about how we are going to choose which enums to generate t
 <pre>
 <code>
 [EnumExtensions] // Our marker attribute
-public enum Colour
+public enum Color
 {
     Red = 0,
     Blue = 1,
@@ -341,8 +341,8 @@ The following code loops through each of the EnumDeclarationSyntax and gathers t
                 continue;
             }
 
-            // Get the full type name of the enum e.g. Colour, 
-            // or OuterClass<T>.Colour if it was nested in a generic type (for example)
+            // Get the full type name of the enum e.g. Color, 
+            // or OuterClass<T>.Color if it was nested in a generic type (for example)
             string enumName = enumSymbol.ToString();
 
             // Get all the members in the enum
@@ -368,3 +368,6 @@ The following code loops through each of the EnumDeclarationSyntax and gathers t
 </pre>
 
 The only thing remaining is to actually generate the source code from our List<EnumToGenerate>!
+
+# Generating the source code
+
