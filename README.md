@@ -76,6 +76,7 @@ Replace the contents of SG.EnumGenerators.csproj with the following:
 
 <pre>
 <code>
+{{
 <Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
 		<!-- Source generators must target netstandard 2.0 -->
@@ -98,6 +99,7 @@ Replace the contents of SG.EnumGenerators.csproj with the following:
 			PackagePath="analyzers/dotnet/cs" Visible="false" />
 	</ItemGroup>
 </Project>
+}}
 </code>
 </pre>
 
