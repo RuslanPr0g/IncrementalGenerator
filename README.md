@@ -197,3 +197,26 @@ public class EnumGenerator : IIncrementalGenerator
 IIncrementalGenerator only requires you implement a single method, Initialize(). In this method you can register your "static" source code (like the marker attributes), as well as build a pipeline for identifying syntax of interest, and transforming that syntax into source code.
 
 In the implementation above, we've already added the code that registers our marker attribute to the compilation. Next, we'll build up the code to identify enums that have been decorated with the marker attribute.
+
+# Building the incremental generator pipeline
+
+One of the key things to remember when building source generators, is that there are a lot of changes happening when you're writing source code. Every change the user makes could trigger the source generator to run again, so you have to be efficient, otherwise you're going to kill the user's IDE experience
+
+The design of incremental generators is to create a "pipeline" of transforms and filters, memoizing the results at each layer to avoid re-doing work if there are no changes. It's important that the stage of the pipeline is very efficient, as this will be called a lot, ostensibly for every source code change. Later layers need to remain efficient, but there's more leeway there. If you've designed your pipeline well, later layers will only be called when users are editing code that matters to you.
+
+https://github.com/dotnet/roslyn/blob/main/docs/features/incremental-generators.md
+
+With that in mind, we'll create a simple generator pipeline that does the following:
+
+- Filter syntax to only enums which have one or more attributes. This should be very fast, and will contain all the enums we're interested in.
+- Filter syntax to only enums which have the [EnumExtensions] attribute. This is slightly more costly than the first stage, as it uses the semantic model (not just syntax), but is still not very expensive.
+- Extract all the information we need using the Compilation. This is the most expensive step, and it combines the Compilation for the project with the previously-selected enum syntax. This is where we can create our collection of EnumToGenerate, generate the source, and register it as a source generator output.
+
+In code, the pipeline is shown below. The three steps above correspond to the IsSyntaxTargetForGeneration(), GetSemanticTargetForGeneration() and Execute() methods respectively, which we'll see next.
+
+The first stage of the pipeline uses CreateSyntaxProvider() to filter the incoming list of syntax tokens. The predicate, IsSyntaxTargetForGeneration(), provides a first layer of filtering. The transform, GetSemanticTargetForGeneration(), can be used to transform the syntax tokens, but in this case we only use it to provide additional filtering after the predicate. The subsequent Where() clause looks like LINQ, but it's actually a method on IncrementalValuesProvider which does that second layer of filtering for us.
+
+The next stage of the pipeline simply combines our collection of EnumDeclarationSyntax emitted from the first stage, with the current Compilation.
+
+Finally, we use the combined tuple of (Compilation, ImmutableArray<EnumDeclarationSyntax>) to actually generate the source code for the EnumExtensions class, using the Execute() method.
+
