@@ -76,30 +76,28 @@ Replace the contents of SG.EnumGenerators.csproj with the following:
 
 <pre>
 <code>
-{{
-<Project Sdk="Microsoft.NET.Sdk">
-	<PropertyGroup>
-		<!-- Source generators must target netstandard 2.0 -->
-		<TargetFramework>netstandard2.0</TargetFramework>
-		<!-- We don't want to reference the source generator dll directly in consuming projects -->
-		<IncludeBuildOutput>false</IncludeBuildOutput>
-		<!-- New project, why not! -->
-		<Nullable>enable</Nullable>
-		<ImplicitUsings>true</ImplicitUsings>
-		<LangVersion>Latest</LangVersion>
-	</PropertyGroup>
-	<!-- The following libraries include the source generator interfaces and types we need -->
-	<ItemGroup>
-		<PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.2" PrivateAssets="all" />
-		<PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" PrivateAssets="all" />
-	</ItemGroup>
-	<!-- This ensures the library will be packaged as a source generator when we use `dotnet pack` -->
-	<ItemGroup>
-		<None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true"
-			PackagePath="analyzers/dotnet/cs" Visible="false" />
-	</ItemGroup>
-</Project>
-}}
+&lt;Project Sdk="Microsoft.NET.Sdk"&gt;
+	&lt;PropertyGroup&gt;
+		&lt;!-- Source generators must target netstandard 2.0 --&gt;
+		&lt;TargetFramework&gt;netstandard2.0&lt;/TargetFramework&gt;
+		&lt;!-- We don't want to reference the source generator dll directly in consuming projects --&gt;
+		&lt;IncludeBuildOutput&gt;false&lt;/IncludeBuildOutput&gt;
+		&lt;!-- New project, why not! --&gt;
+		&lt;Nullable&gt;enable&lt;/Nullable&gt;
+		&lt;ImplicitUsings&gt;true&lt;/ImplicitUsings&gt;
+		&lt;LangVersion&gt;Latest&lt;/LangVersion&gt;
+	&lt;/PropertyGroup&gt;
+	&lt;!-- The following libraries include the source generator interfaces and types we need --&gt;
+	&lt;ItemGroup&gt;
+		&lt;PackageReference Include="Microsoft.CodeAnalysis.Analyzers" Version="3.3.2" PrivateAssets="all" /&gt;
+		&lt;PackageReference Include="Microsoft.CodeAnalysis.CSharp" Version="4.0.1" PrivateAssets="all" /&gt;
+	&lt;/ItemGroup&gt;
+	&lt;!-- This ensures the library will be packaged as a source generator when we use `dotnet pack` --&gt;
+	&lt;ItemGroup&gt;
+		&lt;None Include="$(OutputPath)\$(AssemblyName).dll" Pack="true"
+			PackagePath="analyzers/dotnet/cs" Visible="false" /&gt;
+	&lt;/ItemGroup&gt;
+&lt;/Project&gt;
 </code>
 </pre>
 
