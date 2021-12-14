@@ -371,3 +371,63 @@ The only thing remaining is to actually generate the source code from our List<E
 
 # Generating the source code
 
+The final method SourceGenerationHelper.GenerateExtensionClass() shows how we take our list of EnumToGenerate, and generate the EnumExtensions class. This one is relatively simple conceptually (though a little hard to visualise!), as it's just building up a string:
+
+<pre>
+<code>
+public static string GenerateExtensionClass(List<EnumToGenerate> enumsToGenerate)
+        {
+            var sb = new StringBuilder();
+            sb.Append(@"
+namespace SG.EnumGenerators
+{
+    public static partial class EnumExtensions
+    {");
+            foreach (var enumToGenerate in enumsToGenerate)
+            {
+                sb.Append(@"
+                public static string ToStringFast(this ").Append(enumToGenerate.Name).Append(@" value)
+                    => value switch
+                    {");
+                foreach (var member in enumToGenerate.Values)
+                {
+                    sb.Append(@"
+                ").Append(enumToGenerate.Name).Append('.').Append(member)
+                        .Append(" => nameof(")
+                        .Append(enumToGenerate.Name).Append('.').Append(member).Append("),");
+                }
+
+                sb.Append(@"
+                    _ => value.ToString(),
+                };
+");
+            }
+
+            sb.Append(@"
+    }
+}");
+
+            return sb.ToString();
+        }
+</code>
+</pre>
+
+And we're done! We now have a fully functioning source generator. Adding the source generator to a project containing the Color enum from the start of the post will create an extension method like the following:
+
+<pre>
+<code>
+namespace SG.EnumGenerators;
+public static class EnumExtensions
+{
+    public static string ToStringFast(this Color color)
+        => color switch
+        {
+            Color.Red => nameof(Color.Red),
+            Color.Blue => nameof(Color.Blue),
+            _ => color.ToString(),
+        };
+}
+</code>
+</pre>
+
+**That's all!!!**
