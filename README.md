@@ -150,14 +150,14 @@ We'll create a simple marker attribute as shown below, but we're not going to de
 <code>
 public static class SourceGenerationHelper
 {
-	public const string Attribute = @"
-	namespace SG.EnumGenerators
-	{
-	[System.AttributeUsage(System.AttributeTargets.Enum)]
-	public class EnumExtensionsAttribute : System.Attribute
-	{
-	}
-	}";
+    public const string Attribute = @"
+    namespace SG.EnumGenerators
+    {
+        [System.AttributeUsage(System.AttributeTargets.Enum)]
+        public class EnumExtensionsAttribute : System.Attribute
+        {
+        }
+    }";
 }
 </code>
 </pre>
