@@ -301,5 +301,70 @@ After we've run this stage of the pipeline, we will have a collection of EnumDec
 </code>
 </pre>
 
-We're getting close now, we just have two more methods to fill in:GetTypesToGenerate(), and SourceGenerationHelper.GenerateExtensionClass().
+We're getting close now, we just have two more methods to fill in: GetTypesToGenerate(), and SourceGenerationHelper.GenerateExtensionClass().
 
+# Parsing the EnumDeclarationSyntax to create an EnumToGenerate
+
+The GetTypesToGenerate() method is where most of the typical work associated with working with Roslyn happens. We need to use the combination of the syntax tree and the semantic Compilation to get the details we need, namely:
+
+- The full type name of the enum
+- The name of all the values in the enum
+
+The following code loops through each of the EnumDeclarationSyntax and gathers that data.
+
+<pre>
+<code>
+    static List<EnumToGenerate> GetTypesToGenerate(Compilation compilation, IEnumerable<EnumDeclarationSyntax> enums, CancellationToken ct)
+    {
+        // Create a list to hold our output
+        var enumsToGenerate = new List<EnumToGenerate>();
+        // Get the semantic representation of our marker attribute 
+        INamedTypeSymbol? enumAttribute = compilation.GetTypeByMetadataName(EnumExtensionsAttribute);
+
+        if (enumAttribute == null)
+        {
+            // If this is null, the compilation couldn't find the marker attribute type
+            // which suggests there's something very wrong! Bail out..
+            return enumsToGenerate;
+        }
+
+        foreach (EnumDeclarationSyntax enumDeclarationSyntax in enums)
+        {
+            // stop if we're asked to
+            ct.ThrowIfCancellationRequested();
+
+            // Get the semantic representation of the enum syntax
+            SemanticModel semanticModel = compilation.GetSemanticModel(enumDeclarationSyntax.SyntaxTree);
+            if (semanticModel.GetDeclaredSymbol(enumDeclarationSyntax) is not INamedTypeSymbol enumSymbol)
+            {
+                // something went wrong, bail out
+                continue;
+            }
+
+            // Get the full type name of the enum e.g. Colour, 
+            // or OuterClass<T>.Colour if it was nested in a generic type (for example)
+            string enumName = enumSymbol.ToString();
+
+            // Get all the members in the enum
+            ImmutableArray<ISymbol> enumMembers = enumSymbol.GetMembers();
+            var members = new List<string>(enumMembers.Length);
+
+            // Get all the fields from the enum, and add their name to the list
+            foreach (ISymbol member in enumMembers)
+            {
+                if (member is IFieldSymbol field && field.ConstantValue is not null)
+                {
+                    members.Add(member.Name);
+                }
+            }
+
+            // Create an EnumToGenerate for use in the generation phase
+            enumsToGenerate.Add(new EnumToGenerate(enumName, members));
+        }
+
+        return enumsToGenerate;
+    }
+</code>
+</pre>
+
+The only thing remaining is to actually generate the source code from our List<EnumToGenerate>!
