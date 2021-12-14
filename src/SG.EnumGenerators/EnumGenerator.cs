@@ -96,7 +96,7 @@ public class EnumGenerator : IIncrementalGenerator
         // Get the semantic representation of our marker attribute 
         INamedTypeSymbol? enumAttribute = compilation.GetTypeByMetadataName(EnumExtensionsAttribute);
 
-        if (enumAttribute == null)
+        if (enumAttribute is null)
         {
             // If this is null, the compilation couldn't find the marker attribute type
             // which suggests there's something very wrong! Bail out..
@@ -116,8 +116,8 @@ public class EnumGenerator : IIncrementalGenerator
                 continue;
             }
 
-            // Get the full type name of the enum e.g. Colour, 
-            // or OuterClass<T>.Colour if it was nested in a generic type (for example)
+            // Get the full type name of the enum e.g. Color, 
+            // or OuterClass<T>.Color if it was nested in a generic type (for example)
             string enumName = enumSymbol.ToString();
 
             // Get all the members in the enum
