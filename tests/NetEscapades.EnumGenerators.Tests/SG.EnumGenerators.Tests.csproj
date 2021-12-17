@@ -27,4 +27,8 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\SG.EnumGenerators\SG.EnumGenerators.csproj" />
+  </ItemGroup>
+
 </Project>
